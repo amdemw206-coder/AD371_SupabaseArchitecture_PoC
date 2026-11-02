@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Architectural Dashboard & Subsystem PoC Explorer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        supabase: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#016339',
+                            600: '#03653a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
+                            base: '#131411', // Slate 900
+                            card: '#181a19', // Slate 800
+                            border: '#334155' // Slate 700
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-supabase-base text-slate-100 min-h-screen flex flex-col selection:bg-supabase-500 selection:text-white">
+
+    <!-- Top Navigation / Header -->
+    <header class="border-b border-supabase-border bg-[#131411]/95 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-supabase-400 to-supabase-700 flex items-center justify-center shadow-lg shadow-supabase-900/50">
+                    <i class="fa-solid fa-bolt text-slate-950 text-xl font-bold"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        Supabase Architecture Explorer 
+                    </h1>
+                    <p class="text-xs text-[#989a99]">Composable Open-Source Firebase Alternative Analysis & Sandbox</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-[#131413]/95 border-b border-supabase-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-1 sm:space-x-8 overflow-x-auto py-2">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2.5 whitespace-nowrap bg-supabase-600 text-white shadow">
+                    <i class="fa-solid fa-landmark"></i> Architectural Overview
+                </button>
+                <button onclick="switchTab('components')" id="tab-components" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2.5 whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-cubes"></i> Core Components Matrix
+                </button>
+                <button onclick="switchTab('flow')" id="tab-flow" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2.5 whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-route"></i> Request Flow Visualizer
+                </button>
+                <button onclick="switchTab('sandbox')" id="tab-sandbox" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2.5 whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-shield-halved"></i> RLS & JWT Auth Sandbox
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: ARCHITECTURAL OVERVIEW -->
+        <section id="content-overview" class="tab-content space-y-8 animate-fadeIn">
+            <!-- Hero banner -->
+            <div class="bg-[#181a19]/95 p-8 rounded-2xl border border-supabase-border shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-supabase-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="max-w-3xl space-y-4 relative z-10">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                        PostgreSQL as the <span class="text-supabase-400 underline decoration-supabase-500/50 underline-offset-8">Single Source of Truth</span>
+                    </h2>
+                    <p class="text-[#989a99] text-base sm:text-lg leading-relaxed">
+                        Supabase rejects proprietary vendor lock-in by wrapping time-tested, enterprise-grade open-source tools around a powerful PostgreSQL relational database. Instead of proprietary abstraction layers, Supabase treats PostgreSQL as both the data store and the extensible application engine, routed via high-performance Envoy edge gateways.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Key Architectural Pillars Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-supabase-card p-6 rounded-xl border border-supabase-border flex flex-col justify-between hover:border-supabase-500/50 transition">
+                    <div>
+                        <div class="w-12 h-12 rounded-lg bg-supabase-500/10 text-supabase-400 flex items-center justify-center text-xl mb-4 border border-supabase-500/20">
+                            <i class="fa-solid fa-puzzle-piece"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Composable Open-Source Stack</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Each subsystem is a standalone open-source project (PostgREST, GoTrue, Realtime, Storage API) connected seamlessly through Envoy API gateway and native Postgres database triggers & roles.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 text-xs text-supabase-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-circle"></i> Zero proprietary vendor black boxes
+                    </div>
+                </div>
+
+                <div class="bg-supabase-card p-6 rounded-xl border border-supabase-border flex flex-col justify-between hover:border-supabase-500/50 transition">
+                    <div>
+                        <div class="w-12 h-12 rounded-lg bg-supabase-500/10 text-supabase-400 flex items-center justify-center text-xl mb-4 border border-supabase-500/20">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Database-First Security (RLS)</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Authorization logic is delegated straight to Postgres Row Level Security (RLS) policies. JWT claims are injected directly into Postgres session variables (`request.jwt.claim.sub`).
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 text-xs text-supabase-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-circle"></i> Granular row & column protection
+                    </div>
+                </div>
+
+                <div class="bg-supabase-card p-6 rounded-xl border border-supabase-border flex flex-col justify-between hover:border-supabase-500/50 transition">
+                    <div>
+                        <div class="w-12 h-12 rounded-lg bg-supabase-500/10 text-supabase-400 flex items-center justify-center text-xl mb-4 border border-supabase-500/20">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Extensibility via Extensions</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Leveraging powerful Postgres extensions like `pgvector` for AI embeddings, `pg_cron` for scheduling, `pg_net` for webhooks, and `PostGIS` for geospatial mapping.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 text-xs text-supabase-400 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-circle"></i> Unmatched database extensibility
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architectural Philosophy Deep Dive -->
+            <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 sm:p-8">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-compass text-supabase-400"></i> Why PostgreSQL as the Core Engine?
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300 leading-relaxed">
+                    <div class="space-y-3">
+                        <p>
+                            In traditional serverless or NoSQL architectures (like Firebase), application logic is split between client SDKs, middle-tier custom serverless functions, and document databases with proprietary security rules DSLs.
+                        </p>
+                        <p>
+                            Supabase flips this model. Because Postgres has a robust execution engine, connection pooling (Supavisor), and full-text search built in, clients can talk directly to the database via auto-generated REST and GraphQL APIs without an intervening custom Node.js/Python server.
+                        </p>
+                    </div>
+                    <div class="bg-[#181a19] p-5 rounded-lg border border-supabase-border space-y-3 font-mono text-xs">
+                        <div class="text-supabase-400 font-bold uppercase tracking-wider mb-1">// Traditional vs Supabase Data Flow</div>
+                        <div class="text-slate-400"># Traditional</div>
+                        <div class="text-slate-200">Client -> API Gateway -> Custom Express/Node Server -> ORM -> DB</div>
+                        <div class="text-slate-400 mt-3"># Supabase Architectural Pattern</div>
+                        <div class="text-supabase-300">Client -> Envoy Gateway -> PostgREST / GoTrue -> PostgreSQL (RLS Enforced)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: CORE COMPONENTS MATRIX -->
+        <section id="content-components" class="tab-content hidden space-y-8 animate-fadeIn">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Core Components Breakdown Matrix</h2>
+                    <p class="text-sm text-slate-400">Detailed breakdown of the open-source microservices powering the Supabase ecosystem.</p>
+                </div>
+                <!-- Filter buttons -->
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <button onclick="filterComponents('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-lg bg-supabase-600 text-white font-medium transition">All Services</button>
+                    <button onclick="filterComponents('api')" id="filter-api" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition">API & Edge</button>
+                    <button onclick="filterComponents('auth')" id="filter-auth" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition">Auth & Security</button>
+                    <button onclick="filterComponents('data')" id="filter-data" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition">Data & Storage</button>
+                </div>
+            </div>
+
+            <!-- Components Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="components-grid">
+                <!-- Card 1: Envoy API Gateway -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="api">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">API & Edge</span>
+                            <span class="text-xs font-mono text-slate-400">C++ / Envoy</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-route text-supabase-400"></i> Envoy API Gateway
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            High-performance cloud-native edge proxy handling SSL termination, global traffic routing, rate limiting, and secure request forwarding to downstream internal microservices.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Envoy Proxy</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">System Role:</span> <span class="text-slate-200">Edge Gateway & Proxy</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 2: GoTrue -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="auth">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Auth & Security</span>
+                            <span class="text-xs font-mono text-slate-400">Go</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-key text-supabase-400"></i> GoTrue (Auth)
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            A JSON Web Token (JWT) based API server that manages users, issues JWT tokens, handles OAuth providers (Google, GitHub, Apple), magic links, and multi-factor authentication (MFA).
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">GoTrue (Go)</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Database Role:</span> <span class="text-slate-200">auth schema tables (`auth.users`)</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 3: PostgREST -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="api">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">API Layer</span>
+                            <span class="text-xs font-mono text-slate-400">Haskell</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-code text-supabase-400"></i> PostgREST
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Turns any PostgreSQL database directly into a zero-boilerplate RESTful API. Automatically inspects database schemas, foreign keys, and RLS policies to serve fast JSON queries.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">PostgREST (Haskell)</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Database Role:</span> <span class="text-slate-200">Direct SQL-to-JSON mapping</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Supavisor -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="data">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Data & Storage</span>
+                            <span class="text-xs font-mono text-slate-400">Elixir</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-supabase-400"></i> Supavisor
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Cloud-native, scalable PostgreSQL connection pooler and process supervisor built in Elixir. Manages heavy concurrent client connections with session and transaction pooling modes.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Supavisor (Elixir)</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">System Role:</span> <span class="text-slate-200">Connection Pooling & Routing</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 5: Realtime -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="api">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Realtime</span>
+                            <span class="text-xs font-mono text-slate-400">Elixir</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-tower-broadcast text-supabase-400"></i> Realtime (Phoenix)
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Allows developers to listen to PostgreSQL changes (INSERT, UPDATE, DELETE) via WebSockets using Postgres logical replication features. Also supports multi-user Presence and Broadcast channels.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Phoenix / Elixir</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Database Role:</span> <span class="text-slate-200">Postgres Logical Replication (WAL)</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 6: Storage API -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="data">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Data & Storage</span>
+                            <span class="text-xs font-mono text-slate-400">Node.js</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-hard-drive text-supabase-400"></i> Storage API
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Manages large files such as images, videos, and documents. Uses standard S3-compatible object storage backend while storing file metadata directly in Postgres with RLS security rules.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Fastify / Node.js + S3</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Database Role:</span> <span class="text-slate-200">`storage.objects` table + RLS</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 7: postgres-meta -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="data">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Database Core</span>
+                            <span class="text-xs font-mono text-slate-400">Node.js</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-supabase-400"></i> postgres-meta
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            A REST API for managing your PostgreSQL database. Allows querying tables, columns, schemas, extensions, roles, and executing SQL migrations programmatically.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Node.js / Express</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">System Role:</span> <span class="text-slate-200">Database Metadata Management</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 8: Edge Functions -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="api">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Compute</span>
+                            <span class="text-xs font-mono text-slate-400">TypeScript</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-bolt-lightning text-supabase-400"></i> Edge Functions
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Serverless TypeScript functions distributed globally on Deno Deploy. Perfect for running custom business logic, interacting with third-party APIs (Stripe, OpenAI), and webhook handling.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Deno / V8 Engine</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Database Role:</span> <span class="text-slate-200">Triggered via `pg_net` or HTTP</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 9: Studio Dashboard -->
+                <div class="comp-card bg-supabase-card rounded-xl border border-supabase-border p-6 flex flex-col justify-between hover:border-supabase-500/50 transition group" data-category="data">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-supabase-500/10 text-supabase-400 border border-supabase-500/20">Management UI</span>
+                            <span class="text-xs font-mono text-slate-400">Next.js / React</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white group-hover:text-supabase-400 transition flex items-center gap-2">
+                            <i class="fa-solid fa-window-maximize text-supabase-400"></i> Studio Dashboard
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            The official open-source graphical dashboard interface for managing databases, tables, Auth policies, Edge Functions, SQL editor, and bucket storage configurations.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/60 space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Underlying Tech:</span> <span class="text-slate-200 font-mono">Next.js / React / Tailwind</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">System Role:</span> <span class="text-slate-200">Unified Management UI</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: REQUEST FLOW VISUALIZER -->
+        <section id="content-flow" class="tab-content hidden space-y-8 animate-fadeIn">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Request Flow Visualizer</h2>
+                    <p class="text-sm text-slate-400">Simulate how an incoming client request traverses the Supabase ecosystem from Envoy Gateway to Postgres.</p>
+                </div>
+                <button onclick="startFlowSimulation()" id="sim-btn" class="bg-supabase-600 hover:bg-supabase-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Run Simulation
+                </button>
+            </div>
+
+            <!-- Simulation Pipeline UI -->
+            <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 sm:p-8 space-y-8">
+                <!-- Steps Container -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+                    <!-- Step 1 -->
+                    <div id="step-1" class="flow-step bg-[#181a19]/80 border border-supabase-border p-4 rounded-xl relative transition-all duration-300">
+                        <div class="absolute -top-3 left-4 bg-supabase-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full shadow">01</div>
+                        <div class="text-supabase-400 text-lg mb-2 mt-1"><i class="fa-solid fa-globe"></i></div>
+                        <h4 class="text-sm font-bold text-white">Client / SDK</h4>
+                        <p class="text-xs text-slate-400 mt-1">`supabase.from('todos').select()`</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div id="step-2" class="flow-step bg-[#181a19]/80 border border-supabase-border p-4 rounded-xl relative transition-all duration-300">
+                        <div class="absolute -top-3 left-4 bg-slate-700 text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full shadow">02</div>
+                        <div class="text-blue-400 text-lg mb-2 mt-1"><i class="fa-solid fa-route"></i></div>
+                        <h4 class="text-sm font-bold text-white">Envoy Gateway</h4>
+                        <p class="text-xs text-slate-400 mt-1">SSL termination, routing & rate limiting</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div id="step-3" class="flow-step bg-[#181a19]/80 border border-supabase-border p-4 rounded-xl relative transition-all duration-300">
+                        <div class="absolute -top-3 left-4 bg-slate-700 text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full shadow">03</div>
+                        <div class="text-purple-400 text-lg mb-2 mt-1"><i class="fa-solid fa-code"></i></div>
+                        <h4 class="text-sm font-bold text-white">PostgREST / GoTrue</h4>
+                        <p class="text-xs text-slate-400 mt-1">JWT parsing & SQL query translation</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div id="step-4" class="flow-step bg-[#181a19]/80 border border-supabase-border p-4 rounded-xl relative transition-all duration-300">
+                        <div class="absolute -top-3 left-4 bg-slate-700 text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full shadow">04</div>
+                        <div class="text-amber-400 text-lg mb-2 mt-1"><i class="fa-solid fa-network-wired"></i></div>
+                        <h4 class="text-sm font-bold text-white">Supavisor</h4>
+                        <p class="text-xs text-slate-400 mt-1">Connection pooling & transaction management</p>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div id="step-5" class="flow-step bg-[#181a19]/80 border border-supabase-border p-4 rounded-xl relative transition-all duration-300">
+                        <div class="absolute -top-3 left-4 bg-slate-700 text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full shadow">05</div>
+                        <div class="text-supabase-400 text-lg mb-2 mt-1"><i class="fa-solid fa-database"></i></div>
+                        <h4 class="text-sm font-bold text-white">PostgreSQL + RLS</h4>
+                        <p class="text-xs text-slate-400 mt-1">Execution & Row Level Security filtering</p>
+                    </div>
+                </div>
+
+                <!-- Simulation Live Console Log -->
+                <div class="bg-[#131413] p-4 rounded-xl border border-supabase-border font-mono text-xs space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-slate-400 flex items-center gap-2"><i class="fa-solid fa-terminal text-supabase-400"></i> Simulation Console Output</span>
+                        <span id="sim-status" class="text-supabase-400 font-semibold">Idle - Ready to simulate</span>
+                    </div>
+                    <div id="sim-logs" class="text-slate-300 h-28 overflow-y-auto space-y-1">
+                        <span class="text-slate-500">// Click "Run Simulation" above to trace request execution pipeline in real time.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: RLS & JWT AUTH SANDBOX -->
+        <section id="content-sandbox" class="tab-content hidden space-y-8 animate-fadeIn">
+            <div>
+                <h2 class="text-2xl font-bold text-white">Functional PoC: RLS & JWT Auth Sandbox</h2>
+                <p class="text-sm text-slate-400">Test how Supabase delegates security and authorization directly to the database via JWT claims and PostgreSQL Row Level Security (RLS).</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left Column: Controls & JWT Inspector -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- Simulated User Context -->
+                    <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-user-shield text-supabase-400"></i> 1. Select User Role / Context
+                        </h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setUserContext('authenticated')" id="role-auth" class="role-btn p-3 rounded-lg border border-supabase-500 bg-[#181a19]/20 text-supabase-300 text-xs font-semibold text-center transition">
+                                Regular User (ID: 42)
+                            </button>
+                            <button onclick="setUserContext('admin')" id="role-admin" class="role-btn p-3 rounded-lg border border-slate-700 bg-[#181a19]/20 text-slate-400 text-xs font-semibold text-center transition">
+                                Admin User (ID: 1)
+                            </button>
+                            <button onclick="setUserContext('anon')" id="role-anon" class="role-btn p-3 rounded-lg border border-slate-700 bg-[#181a19]/20 text-slate-400 text-xs font-semibold text-center transition">
+                                Anonymous / Guest
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- JWT Inspector -->
+                    <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-key text-supabase-400"></i> 2. Injected JWT Claims
+                            </h3>
+                            <span class="text-xs text-supabase-400 font-mono">Passed to Postgres Session</span>
+                        </div>
+                        <div class="bg-[#131413] p-4 rounded-lg border border-supabase-border font-mono text-xs text-supabase-300 overflow-x-auto leading-relaxed" id="jwt-output">
+{
+  "iss": "supabase",
+  "sub": "a1b2c3d4-user-42",
+  "aud": "authenticated",
+  "role": "authenticated",
+  "email": "student@university.edu",
+  "exp": 1893456000
+}
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            Postgres reads these claims via <code class="text-supabase-400">auth.uid()</code> and <code class="text-supabase-400">auth.jwt()</code> during query execution.
+                        </p>
+                    </div>
+
+                    <!-- RLS Policy Editor Simulation -->
+                    <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-file-code text-supabase-400"></i> 3. Active RLS SQL Policy
+                        </h3>
+                        <div class="bg-[#131413] p-4 rounded-lg border border-supabase-border font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto">
+<span class="text-purple-400">CREATE POLICY</span> <span class="text-yellow-300">"Users can read own todos"</span><br>
+<span class="text-purple-400">ON</span> public.todos <span class="text-purple-400">FOR</span> <span class="text-purple-400">SELECT</span><br>
+<span class="text-purple-400">USING</span> (<br>
+&nbsp;&nbsp;auth.uid() = user_id <br>
+&nbsp;&nbsp;<span class="text-purple-400">OR</span> <br>
+&nbsp;&nbsp;current_setting(<span class="text-green-300">'request.jwt.claim.role'</span>) = <span class="text-green-300">'service_role'</span><br>
+);
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Simulated Database Query & Results Table -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-supabase-card rounded-xl border border-supabase-border p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-table text-supabase-400"></i> 4. Database Table (`public.todos`) Result
+                            </h3>
+                            <button onclick="executeRlsQuery()" class="bg-supabase-600 hover:bg-supabase-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-play"></i> Execute Query
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            Simulating: <code class="text-supabase-400">SELECT * FROM todos;</code> executed through PostgREST with RLS filter applied.
+                        </p>
+
+                        <!-- Table Results View -->
+                        <div class="border border-supabase-border rounded-lg overflow-hidden bg-[#131413]">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-[#181a19] border-b border-supabase-border text-slate-400">
+                                    <tr>
+                                        <th class="p-3">ID</th>
+                                        <th class="p-3">User ID</th>
+                                        <th class="p-3">Task Description</th>
+                                        <th class="p-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="todos-table-body" class="divide-y divide-slate-800 font-mono">
+                                    <!-- Dynamic rows inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="query-summary" class="text-xs text-slate-400 pt-2 flex items-center justify-between">
+                            <span>Showing rows permitted by PostgreSQL RLS policy.</span>
+                            <span class="text-supabase-400 font-semibold" id="row-count-badge">3 rows returned</span>
+                        </div>
+                    </div>
+
+                    <!-- Explanatory Insight -->
+                    <div class="bg-gradient-to-r from-supabase-950/60 to-[#181a19]/95 p-5 rounded-xl border border-supabase-border space-y-2">
+                        <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-supabase-400"></i> Academic Takeaway
+                        </h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Notice how anonymous users see 0 rows, regular users only see their own rows (user_id: 42), and admin users bypass standard user restrictions. Because this security is enforced at the PostgreSQL kernel level, even if a developer makes a mistake in the API query code, the database refuses unauthorized access.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-supabase-border bg-[#131413]/95 mt-12 py-6 text-center text-xs text-slate-500">
+        <p>Supabase Architectural Dashboard & PoC Explorer • Designed for Academic Analysis & Fact-Checking (Envoy Core Update)</p>
+    </footer>
+
+    <!-- Export Report Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-supabase-card border border-supabase-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-arrow-down text-supabase-400"></i> Export Architectural Report
+                </h3>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Summary of Supabase Architecture for your assignment notes:
+            </p>
+            <div class="bg-slate-950 p-4 rounded-lg border border-supabase-border font-mono text-xs text-slate-300 max-h-60 overflow-y-auto space-y-2">
+                <div class="text-supabase-400 font-bold"># Supabase System Breakdown (Updated Aug 2026)</div>
+                <div>- Architectural Style: Modular Monolith / Composable OSS Firebase Alternative</div>
+                <div>- Core Philosophy: PostgreSQL as Single Source of Truth & Extensibility Engine</div>
+                <div>- API Gateway: Envoy Proxy (Routing, Rate Limiting & SSL)</div>
+                <div>- API Layer: PostgREST (Haskell) + postgres-meta</div>
+                <div>- Auth Layer: GoTrue (Go) with JWT Session Injection</div>
+                <div>- Connection Pooler: Supavisor (Elixir)</div>
+                <div>- Management UI: Studio Dashboard</div>
+                <div>- Security: Native PostgreSQL Row Level Security (RLS)</div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeExportModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Cancel</button>
+                <button onclick="downloadReport()" class="px-4 py-2 rounded-lg bg-supabase-600 hover:bg-supabase-500 text-white text-xs font-semibold transition flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Download Markdown
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-supabase-600', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+            });
+
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+            activeBtn.classList.add('bg-supabase-600', 'text-white', 'shadow');
+        }
+
+        // Component Filtering Logic
+        function filterComponents(category) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-supabase-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            document.getElementById('filter-' + category).classList.remove('bg-slate-800', 'text-slate-300');
+            document.getElementById('filter-' + category).classList.add('bg-supabase-600', 'text-white');
+
+            document.querySelectorAll('.comp-card').forEach(card => {
+                if (category === 'all' || card.dataset.category === category) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Request Flow Simulation
+        function startFlowSimulation() {
+            const btn = document.getElementById('sim-btn');
+            const status = document.getElementById('sim-status');
+            const logs = document.getElementById('sim-logs');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            logs.innerHTML = '';
+
+            const steps = [
+                { id: 1, name: "Client SDK", log: "[01] Client initialized GET request with Bearer JWT token." },
+                { id: 2, name: "Envoy Gateway", log: "[02] Envoy API Gateway received request on /rest/v1/todos, validated SSL & forwarded." },
+                { id: 3, name: "PostgREST", log: "[03] PostgREST parsed URL query parameters and translated request into SQL statement." },
+                { id: 4, name: "Supavisor Pooler", log: "[04] Supavisor routed transaction through PostgreSQL connection pooler efficiently." },
+                { id: 5, name: "PostgreSQL & RLS", log: "[05] Postgres executed query with session setting `request.jwt.claim.sub` and RLS policy applied!" }
+            ];
+
+            let currentStep = 0;
+
+            function runStep() {
+                if (currentStep > 0) {
+                    const prevCard = document.getElementById('step-' + currentStep);
+                    prevCard.classList.remove('border-supabase-500', 'bg-supabase-950/40', 'shadow-lg', 'shadow-supabase-900/50');
+                }
+
+                if (currentStep < steps.length) {
+                    currentStep++;
+                    const card = document.getElementById('step-' + currentStep);
+                    card.classList.add('border-supabase-500', 'bg-supabase-950/40', 'shadow-lg', 'shadow-supabase-900/50');
+                    
+                    status.textContent = `Processing step ${currentStep}/5: ${steps[currentStep-1].name}`;
+                    logs.innerHTML += `<div><span class="text-supabase-400">></span> ${steps[currentStep-1].log}</div>`;
+                    logs.scrollTop = logs.scrollHeight;
+
+                    setTimeout(runStep, 700);
+                } else {
+                    status.textContent = "Simulation completed successfully!";
+                    logs.innerHTML += `<div class="text-supabase-400 font-bold">> Request successfully resolved and JSON returned to client.</div>`;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            runStep();
+        }
+
+        // RLS & JWT Auth Sandbox State & Mock Database
+        let currentUserRole = 'authenticated';
+
+        const mockTodos = [
+            { id: 101, user_id: 42, task: "Complete Supabase architecture assignment", status: "In Progress" },
+            { id: 102, user_id: 42, task: "Review PostgREST Haskell translation logic", status: "Completed" },
+            { id: 103, user_id: 88, task: "Deploy Edge Function on Deno Deploy", status: "Pending" },
+            { id: 104, user_id: 1, task: "Configure global database replication cluster", status: "Admin Task" },
+            { id: 105, user_id: 42, task: "Test pgvector embedding semantic search", status: "Pending" }
+        ];
+
+        function setUserContext(role) {
+            currentUserRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('border-supabase-500', 'bg-supabase-600/20', 'text-supabase-300');
+                btn.classList.add('border-slate-700', 'bg-slate-900', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById('role-' + (role === 'authenticated' ? 'auth' : role));
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-900', 'text-slate-400');
+            activeBtn.classList.add('border-supabase-500', 'bg-supabase-600/20', 'text-supabase-300');
+
+            const jwtOutput = document.getElementById('jwt-output');
+            if (role === 'authenticated') {
+                jwtOutput.textContent = `{\n  "iss": "supabase",\n  "sub": "a1b2c3d4-user-42",\n  "aud": "authenticated",\n  "role": "authenticated",\n  "email": "student@university.edu",\n  "exp": 1893456000\n}`;
+            } else if (role === 'admin') {
+                jwtOutput.textContent = `{\n  "iss": "supabase",\n  "sub": "admin-uuid-001",\n  "aud": "authenticated",\n  "role": "service_role",\n  "email": "admin@supabase.io",\n  "exp": 1893456000\n}`;
+            } else {
+                jwtOutput.textContent = `{\n  "iss": "supabase",\n  "role": "anon",\n  "exp": 1893456000\n}`;
+            }
+
+            executeRlsQuery();
+        }
+
+        function executeRlsQuery() {
+            const tbody = document.getElementById('todos-table-body');
+            const badge = document.getElementById('row-count-badge');
+            tbody.innerHTML = '';
+
+            let filtered = [];
+            if (currentUserRole === 'authenticated') {
+                // User 42 can only see their own records
+                filtered = mockTodos.filter(t => t.user_id === 42);
+            } else if (currentUserRole === 'admin') {
+                // Admin / service_role bypasses RLS
+                filtered = mockTodos;
+            } else {
+                // Anonymous sees nothing per default RLS
+                filtered = [];
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500 italic">0 rows returned (Blocked by PostgreSQL RLS Policy)</td></tr>`;
+            } else {
+                filtered.forEach(t => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-900 transition">
+                            <td class="p-3 text-slate-300">${t.id}</td>
+                            <td class="p-3 text-supabase-400 font-semibold">${t.user_id}</td>
+                            <td class="p-3 text-slate-200">${t.task}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300">${t.status}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            badge.textContent = `${filtered.length} row${filtered.length === 1 ? '' : 's'} returned`;
+        }
+
+        // Modal Controls
+        function openExportModal() {
+            document.getElementById('export-modal').classList.remove('hidden');
+        }
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+        }
+        function downloadReport() {
+            const reportContent = `# Supabase Architectural Analysis Report (Updated August 2026)\n\n## 1. Architectural Style\n- **Modular Monolith / Composable Open-Source Firebase Alternative**\n- Core Philosophy: PostgreSQL as Single Source of Truth & Extensibility Engine.\n\n## 2. Core Components\n- **Envoy API Gateway**: Edge proxy routing & SSL termination\n- **GoTrue**: Auth & JWT management (Go)\n- **PostgREST**: Zero-boilerplate REST API from Postgres schema (Haskell)\n- **Supavisor**: Scalable connection pooler (Elixir)\n- **Realtime**: WebSockets & Logical Replication (Elixir/Phoenix)\n- **Storage API**: S3-compatible object storage with Postgres metadata\n- **postgres-meta**: Database metadata management API (Node.js)\n- **Studio Dashboard**: Graphical management UI (Next.js)\n\n## 3. Security Model\n- Row Level Security (RLS) delegates authorization directly to database rows based on JWT claims.`;
+            const blob = new Blob([reportContent], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Supabase_Architectural_Report.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeExportModal();
+        }
+
+        // Initialize table on load
+        window.onload = function() {
+            executeRlsQuery();
+        };
+    </script>
+</body>
+</html>
