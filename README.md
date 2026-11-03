@@ -5,8 +5,9 @@
 - Prototype built: PoC lightweight HTML application that details on the architectural components of Supabase that allows it to operate as a Backend-as-a-Service (BaaS).
 
 ### Setup & Run Instructions: 
-- (i) Navigate to "PoC files"
-- (ii) Right-click on "supabase_architectural_dashboard_poc.html" hover on "Open With" and select your preferred browser
+Two Methods: 
+- (i) Clicking on the Github Pages link: https://amdemw206-coder.github.io/AD371_SupabaseArchitecture_PoC/ 
+- (ii) Right-click on "index.html" hover on "Open With" and select your preferred browser
     - *Something to note*: the file "supabase_architectural_dashboard_poc_with_original_flaws.html" is the original AI assisted file that was scaffolded to create the html file from step 2.  
 
 ### AI Disclosure and Prompt Appendix: 
